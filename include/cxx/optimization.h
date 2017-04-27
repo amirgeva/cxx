@@ -1,7 +1,9 @@
-#ifndef optimization_h__
-#define optimization_h__
+#ifndef cxx_optimization_h__
+#define cxx_optimization_h__
 
 #include <types.h>
+
+namespace cxx {
 
 template<class M>
 struct mat_traits
@@ -33,11 +35,20 @@ struct mat_traits<Matrix>
   static Matrix identity(int n) { return Matrix::Identity(n, n); }
   static Matrix diagonal(const Vector& v) { return Matrix(v.asDiagonal()); }
 
+  /*
   class solver : public Eigen::JacobiSVD<Matrix>
   {
   public:
     solver(const Matrix& m) 
     : Eigen::JacobiSVD<Matrix>(m, Eigen::ComputeThinU | Eigen::ComputeThinV)
+    {}
+  };
+  */
+  class solver : public Eigen::LDLT<Matrix>
+  {
+  public:
+    solver(const Matrix& m) 
+    : Eigen::LDLT<Matrix>(m)
     {}
   };
 };
@@ -56,6 +67,14 @@ struct OptimizationParameter
 };
 
 typedef std::vector<OptimizationParameter> param_vec;
+
+template<class V>
+inline void push_params(param_vec& params, V& v)
+{
+  int n=v.size();
+  for(int i=0;i<n;++i)
+    params.push_back(OptimizationParameter(&v(i)));
+}
 
 template<class M>
 class CostFunction
@@ -94,25 +113,19 @@ class LevenbergMarquardt
   double m_LowDeltaThres;
   double m_LowGradientThres;
   double m_StartingMu;
+  double m_ErrSqrNorm;
   std::unique_ptr<std::ofstream> m_Log;
   int m_Verbose;
-  //Mat m_Weights;
 public:
   LevenbergMarquardt(cost_function& f)
   : m_Function(f)
-  , m_LowDeltaThres(1e-15)
-  , m_LowGradientThres(1e-5)
+  , m_LowDeltaThres(1e-10)
+  , m_LowGradientThres(1e-10)
   , m_StartingMu(1e3)
   , m_Verbose(0)
-  {
-    //m_Weights=mat_traits<Mat>::identity(f.get_parameters().size());
-  }
+  {}
   
-//  void set_weights(const Vector& W)
-//  {
-//    if (W.size() != m_Function.get_parameters().size()) return;
-//    m_Weights=mat_traits<Mat>::diagonal(W);
-//  }
+  double get_err_sqr_norm() const { return m_ErrSqrNorm; }
   
   void enable_logging(const xstring& filename)
   {
@@ -174,7 +187,6 @@ public:
       Vector delta=solver.solve(-g);
       if (iter<10)
       {
-        //delta=m_Weights*delta;
         for(int i=0;i<delta.size();++i)
           delta(i)*=params[i].weight;
       }
@@ -183,8 +195,6 @@ public:
         res = OR_LOW_DELTA;
         break;
       }
-//      if (m_Log)
-//        (*m_Log) << csv(P) << csv(gradient) << csv(
       for(unsigned i=0;i<P.size();++i)
         P[i].value() = params[i].value() + delta(i);
 
@@ -192,7 +202,6 @@ public:
       next_err_norm = next_err.squaredNorm();
       if (next_err_norm < err_norm)
       {
-        //if ((iter%100)==0)
         if (m_Verbose>1)
         {
           double avge=sqrt(next_err_norm / next_err.size());
@@ -201,7 +210,6 @@ public:
             std::cout << P[i].value() << ' ';
           std::cout << std::endl;
         }
-        //std::cout << iter << ": " << grad_norm << "  Mu=" << Mu << "  C0=" << C0.transpose() << "  C1=" << C1.transpose() << std::endl;
         err_norm = next_err_norm;
         err = next_err;
         for(unsigned i=0;i<P.size();++i)
@@ -210,19 +218,21 @@ public:
         H = J.transpose()*J;
         g = 2 * J.transpose()*err;
         grad_norm = g.squaredNorm();
-        if (Mu > 1) Mu *= 0.8;
-        else
-          Mu = Mu*0.99;
-        //if (U() < 0.1) Mu *= 2;
+        //if (Mu <= 1) Mu = Mu*0.99; else
+          Mu *= 0.8;
       }
       else
       {
         Mu = Mu*1.2;
       }
     }
+    m_ErrSqrNorm = err_norm;
     max_iters = iter;
     return res;
   }
 };
 
-#endif // optimization_h__
+} // namespace cxx
+
+#endif // cxx_optimization_h__
+

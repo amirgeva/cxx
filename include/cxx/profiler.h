@@ -7,6 +7,8 @@
 #include <string>
 #include <chrono>
 
+namespace cxx {
+
 class Timer
 {
 public:
@@ -78,7 +80,11 @@ public:
   }
 };
 
-#define PROFILER(x) SectionProfiler l_Prof_##__LINE__ (#x)
-#define PROFILER_N(x,N) SectionProfiler l_Prof_##__LINE__ (#x,N)
+} // namespace cxx
+
+#define PROFILER(x) cxx::SectionProfiler l_Prof_##__LINE__ (#x)
+#define PROFILER_N(x,N) cxx::SectionProfiler l_Prof_##__LINE__ (#x,N)
+
+
 
 #endif // H_PROFILER
