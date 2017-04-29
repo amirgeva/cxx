@@ -13,13 +13,13 @@ typedef unsigned char byte;
 const double PI = 3.1415926535897932384626433832795;
 
 template<class T>
-inline const T& Max(const T& a, const T& b)
+inline T Max(const T& a, const T& b)
 {
   return a>b?a:b;
 }
 
 template<class T>
-inline const T& Min(const T& a, const T& b)
+inline T Min(const T& a, const T& b)
 {
   return a<b?a:b;
 }
@@ -187,6 +187,12 @@ inline std::ostream& operator<< (std::ostream& os, const Rect& r)
 
 template<class T>
 inline T sqr(const T& t) { return t*t; }
+
+template<class T>
+inline T cubed(const T& t) { return t*t*t; }
+
+template<class T>
+inline bool is_negative(const T& t) { return t<0; }
 
 class WindowAverage
 {

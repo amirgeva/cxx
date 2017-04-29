@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cxx/errors.h>
+#include <cxx/prims.h>
+#include <assert.h>
 
 namespace cxx {
 
@@ -19,6 +21,16 @@ namespace cxx {
 
     size_t degree() const { return m_Coefficients.size() - 1; }
 
+    double evaluate(double x) const
+    {
+      double sum = 0;
+      for (size_t i = 0; i <= degree(); ++i)
+      {
+        sum += pow(x, double(i)) * m_Coefficients[i];
+      }
+      return sum;
+    }
+
     double& operator[] (size_t index)
     {
       assert(index < m_Coefficients.size());
@@ -30,6 +42,14 @@ namespace cxx {
       assert(index < m_Coefficients.size());
       return m_Coefficients[index];
     }
+
+    Polynomial derivative() const
+    {
+      Polynomial res(degree() - 1, 0);
+      for (size_t i = 0; i < degree(); ++i)
+        res[i] = (i + 1)*m_Coefficients[i + 1];
+      return res;
+    }
   };
 
   inline std::ostream& operator<< (std::ostream& os, const Polynomial& p)
@@ -38,7 +58,7 @@ namespace cxx {
     for (size_t i = d; i <= d; --i)
     {
       if (i < d) os << (p[i] < 0 ? " - " : " + ");
-      os << fabs(p[i]);
+      if (i==0 || (i>0 && fabs(p[i])!=1)) os << fabs(p[i]);
       if (i > 0)
         os << "X";
       if (i > 1) os << "^" << i;
@@ -120,6 +140,10 @@ namespace cxx {
     return res;
   }
 
+  // Important note: with C++ operator precedence, this operator does not have a high priority,
+  //                 so typical expressions such as    a*b^2  would be interpreted as:  (a*b)^2
+  //                 When using this operator, use parentheses to avoid problems.
+  //                                                   a*(b^2)
   inline Polynomial operator^ (const Polynomial& p, int power)
   {
     if (power < 0) THROW_ERROR("Unsupported power: " << power);
