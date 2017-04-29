@@ -1,5 +1,4 @@
-#ifndef H_PROGRESS_BAR
-#define H_PROGRESS_BAR
+#pragma once
 
 #include <xstring.h>
 
@@ -59,4 +58,3 @@ public:
 
 } // namespace cxx
 
-#endif // H_PROGRESS_BAR

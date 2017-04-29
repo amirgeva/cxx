@@ -1,5 +1,4 @@
-#ifndef cxx_optimization_h__
-#define cxx_optimization_h__
+#pragma once
 
 #include <types.h>
 
@@ -233,6 +232,4 @@ public:
 };
 
 } // namespace cxx
-
-#endif // cxx_optimization_h__
 

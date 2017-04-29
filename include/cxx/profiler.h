@@ -1,5 +1,4 @@
-#ifndef H_PROFILER
-#define H_PROFILER
+#pragma once
 
 #include <iostream>
 #include <iomanip>
@@ -86,5 +85,3 @@ public:
 #define PROFILER_N(x,N) cxx::SectionProfiler l_Prof_##__LINE__ (#x,N)
 
 
-
-#endif // H_PROFILER

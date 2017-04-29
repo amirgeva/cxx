@@ -1,5 +1,4 @@
-#ifndef types_h__
-#define types_h__
+#pragma once
 
 #include <iostream>
 #include <fstream>
@@ -184,5 +183,3 @@ struct null_output_iterator :
 
   null_output_iterator & operator*() { return *this; }
 };
-
-#endif // types_h__

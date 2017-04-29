@@ -1,5 +1,4 @@
-#ifndef H_UDP_WRAPPER
-#define H_UDP_WRAPPER
+#pragma once
 
 #include <Poco/Net/DatagramSocket.h>
 #include <Poco/Net/SocketAddress.h>
@@ -96,4 +95,3 @@ public:
   }
 };
 
-#endif // H_UDP_WRAPPER

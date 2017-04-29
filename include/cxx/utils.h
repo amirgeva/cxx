@@ -1,9 +1,4 @@
-#ifndef H_UTILS
-#define H_UTILS
-
-
-
-
+#pragma once
 
 inline std::string format_vector(const Vector& v)
 {
@@ -101,4 +96,3 @@ inline Matrix extract_euler_angles(const Matrix& R)
 
 
 
-#endif // H_UTILS
