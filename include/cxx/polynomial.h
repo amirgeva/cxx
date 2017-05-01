@@ -4,18 +4,26 @@
 #include <cxx/prims.h>
 #include <assert.h>
 
+#include <boost/math/constants/constants.hpp>
+#include <boost/multiprecision/cpp_dec_float.hpp>
+
 namespace cxx {
+
 
   class Polynomial
   {
-    typedef std::vector<double> coef_vec;
+  public:
+    typedef boost::multiprecision::cpp_dec_float_50 real;
+    //typedef double real;
+  private:
+    typedef std::vector<real> coef_vec;
 
     // Coefficients from low rank (0) to high (degree)
     coef_vec m_Coefficients;
   public:
-    Polynomial(double scalar = 0) : m_Coefficients(1, scalar) {}
+    Polynomial(real scalar = 0) : m_Coefficients(1, scalar) {}
 
-    explicit Polynomial(size_t degree, double default_value)
+    explicit Polynomial(size_t degree, real default_value)
       : m_Coefficients(degree + 1, default_value)
     {}
 
@@ -23,21 +31,27 @@ namespace cxx {
 
     double evaluate(double x) const
     {
-      double sum = 0;
+      real sum = 0;
+      //real xp=1;
       for (size_t i = 0; i <= degree(); ++i)
       {
-        sum += pow(x, double(i)) * m_Coefficients[i];
+        real term = m_Coefficients[i];
+        for(size_t j=0;j<i;++j)
+          term*=x;
+        sum+=term;
+        //sum += xp * m_Coefficients[i];
+        //xp*=x;
       }
-      return sum;
+      return double(sum);
     }
 
-    double& operator[] (size_t index)
+    real& operator[] (size_t index)
     {
       assert(index < m_Coefficients.size());
       return m_Coefficients[index];
     }
 
-    double operator[] (size_t index) const
+    real operator[] (size_t index) const
     {
       assert(index < m_Coefficients.size());
       return m_Coefficients[index];
@@ -57,53 +71,53 @@ namespace cxx {
     size_t d = p.degree();
     for (size_t i = d; i <= d; --i)
     {
-      if (i < d) os << (p[i] < 0 ? " - " : " + ");
+      if (i < d || p[i]<0) os << (p[i] < 0 ? " - " : " + ");
       if (i==0 || (i>0 && fabs(p[i])!=1)) os << fabs(p[i]);
       if (i > 0)
-        os << "X";
+        os << "*x";
       if (i > 1) os << "^" << i;
     }
     return os;
   }
 
-  inline Polynomial operator* (double scalar, const Polynomial& p)
+  inline Polynomial operator* (Polynomial::real scalar, const Polynomial& p)
   {
     Polynomial res = p;
     for (size_t i = 0; i <= p.degree(); ++i) res[i] *= scalar;
     return res;
   }
 
-  inline Polynomial operator* (const Polynomial& p, double scalar)
+  inline Polynomial operator* (const Polynomial& p, Polynomial::real scalar)
   {
     return scalar*p;
   }
 
-  inline Polynomial operator/ (const Polynomial& p, double scalar)
+  inline Polynomial operator/ (const Polynomial& p, Polynomial::real scalar)
   {
     return (1.0 / scalar)*p;
   }
 
-  inline Polynomial operator+ (const Polynomial& p, double scalar)
+  inline Polynomial operator+ (const Polynomial& p, Polynomial::real scalar)
   {
     Polynomial res = p;
     res[0] += scalar;
     return res;
   }
 
-  inline Polynomial operator+ (double scalar, const Polynomial& p)
+  inline Polynomial operator+ (Polynomial::real scalar, const Polynomial& p)
   {
     return p + scalar;
   }
 
-  inline Polynomial operator- (const Polynomial& p, double scalar)
+  inline Polynomial operator- (const Polynomial& p, Polynomial::real scalar)
   {
     scalar = -scalar;
     return p + scalar;
   }
 
-  inline Polynomial operator- (double scalar, const Polynomial& p)
+  inline Polynomial operator- (Polynomial::real scalar, const Polynomial& p)
   {
-    return -scalar + p;
+    return scalar + (-1.0 * p);
   }
 
   inline Polynomial operator* (const Polynomial& a, const Polynomial& b)
@@ -147,7 +161,7 @@ namespace cxx {
   inline Polynomial operator^ (const Polynomial& p, int power)
   {
     if (power < 0) THROW_ERROR("Unsupported power: " << power);
-    if (power == 0) return 1;
+    if (power == 0) return Polynomial(1.0);
     if (power == 1) return p;
     Polynomial res = p;
     while (--power > 0)
