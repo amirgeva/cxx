@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cxx/types.h>
+#include <cxx/eigen/types.h>
 
 namespace cxx {
 
