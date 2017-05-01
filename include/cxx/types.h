@@ -9,11 +9,9 @@
 #include <memory>
 #include <string>
 #include <sstream>
-//#include <prims.h>
-#include <xstring.h>
-//#include <aligned.h>
+#include <cxx/xstring.h>
+#include <cxx/prims.h>
 
-//#include <opencv2/opencv.hpp>
 #include <Eigen/Sparse>
 #include <Eigen/Dense>
 #include <Eigen/SparseCholesky>
@@ -21,6 +19,8 @@
 #include <Eigen/StdVector>
 #include <Eigen/QR>
 #include <Eigen/LU>
+
+namespace cxx {
 
 typedef Eigen::Vector2d FramePoint;
 typedef Eigen::Vector3d WorldPoint;
@@ -183,3 +183,6 @@ struct null_output_iterator :
 
   null_output_iterator & operator*() { return *this; }
 };
+
+} // namespace cxx
+

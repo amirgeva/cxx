@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cxx/types.h>
+
+namespace cxx {
+
 inline std::string format_vector(const Vector& v)
 {
   size_t n = v.size();
@@ -94,5 +98,7 @@ inline Matrix extract_euler_angles(const Matrix& R)
   return res;
 }
 
+
+} // namespace cxx
 
 

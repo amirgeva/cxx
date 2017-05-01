@@ -6,8 +6,6 @@
 #include <vector>
 #include <cmath>
 
-#include <cxx/xstring.h>
-
 typedef unsigned char byte;
 
 const double PI = 3.1415926535897932384626433832795;
