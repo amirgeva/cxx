@@ -14,17 +14,19 @@ inline void delay(unsigned ms)
   std::this_thread::sleep_for(std::chrono::milliseconds(ms));
 }
 
+typedef std::recursive_mutex Mutex;
+
 class Monitor
 {
-  std::mutex& m_Mutex;
+  Mutex& m_Mutex;
 public:
-  Monitor(std::mutex& m) : m_Mutex(m) { m_Mutex.lock(); }
+  Monitor(Mutex& m) : m_Mutex(m) { m_Mutex.lock(); }
   ~Monitor() { m_Mutex.unlock(); }
 };
 
-#define SYNC_MUTEX std::mutex m_Mutex
+#define SYNC_MUTEX Mutex m_Mutex
 #define MONITOR(m) Monitor l_##__LINE__(m)
-#define SYNCHRONIZED MONITOR(m_Mutex)
+#define SYNCHRONIZED MONITOR(Mutex)
 
 // Basically anything that can be called like a function that looks like:
 // void func();
@@ -164,7 +166,7 @@ private:
 
   std::thread m_Thread;
   tt_vec      m_Pool;
-  std::mutex  m_Mutex;
+  SYNC_MUTEX;
   call_seq    m_Tasks;
   bool        m_Terminate;
 };
@@ -178,8 +180,8 @@ public:
 };
 
 #define TASK_MANAGER_POOL(n) TaskManagerCleaner l_TaskManager_##__LINE__(n)
-#define TASKS_WAIT TaskManager::instance()->wait()
-inline void TASK(callable c) { TaskManager::instance()->add_task(c); }
+#define TASKS_WAIT cxx::TaskManager::instance()->wait()
+inline void TASK(callable c) { cxx::TaskManager::instance()->add_task(c); }
 inline void CALL(callable c) { c(); }
 inline void TASK(bool parallel, callable c) { if (parallel) TASK(c); else c(); }
 
