@@ -58,9 +58,10 @@ struct OptimizationParameter
   : ptr(p)
   , weight(w)
   {}
-  
-  double   weight;
+
   double*  ptr;
+  double   weight;
+
   double& value() { return *ptr; }
   double value() const { return *ptr; }
 };
