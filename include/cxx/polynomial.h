@@ -26,7 +26,7 @@ namespace cxx {
 
     void set_degree(size_t d)
     {
-      m_Coefficients.resize(d,0.0);
+      m_Coefficients.resize(d+1,0.0);
     }
   public:
     Polynomial(real scalar = 0.0)
@@ -182,6 +182,18 @@ namespace cxx {
   inline Polynomial<T> operator- (typename Polynomial<T>::real scalar, const Polynomial<T>& p)
   {
     return Polynomial<T>(scalar)-p;
+  }
+
+  template<class T>
+  inline Polynomial<T> operator* (const Polynomial<T>& p, typename Polynomial<T>::real scalar)
+  {
+    return p*Polynomial<T>(scalar);
+  }
+
+  template<class T>
+  inline Polynomial<T> operator* (typename Polynomial<T>::real scalar, const Polynomial<T>& p)
+  {
+    return Polynomial<T>(scalar)*p;
   }
 
 
