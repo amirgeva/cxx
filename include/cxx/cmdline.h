@@ -24,10 +24,10 @@ namespace cxx {
   };
 
 #define COMMAND_LINE_OPTION(name,takes_param,description)\
-class Opt_##name : public CommandLineOption { public:\
-Opt_##name() { set_description(description); CommandLine::instance()->register_option(#name,takes_param,this); }\
-void process(const xstring& param); } g_Opt_##name;\
-void Opt_##name::process(const xstring& param)
+class Opt_##name : public cxx::CommandLineOption { public:\
+Opt_##name() { set_description(description); cxx::CommandLine::instance()->register_option(#name,takes_param,this); }\
+virtual void process(const cxx::xstring& param) override; } g_Opt_##name;\
+void Opt_##name::process(const cxx::xstring& param)
 
   class CommandLine
   {
