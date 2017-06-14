@@ -7,6 +7,8 @@
 #include <thread>
 #include <chrono>
 
+namespace cxx {
+
 inline void send_udp(const char* host, int port, const char* message, int len)
 {
   Poco::Net::SocketAddress sa(host, port);
@@ -84,7 +86,7 @@ public:
       }
     }
   }
-  
+
   bool empty() const { return m_Queue.empty(); }
   UDPMessage pop() 
   {
@@ -94,4 +96,7 @@ public:
     return m; 
   }
 };
+
+} // namespace cxx
+
 
