@@ -114,6 +114,7 @@ class LevenbergMarquardt
   double m_LowGradientThres;
   double m_StartingMu;
   double m_ErrSqrNorm;
+  double m_GradSqrNorm;
   std::unique_ptr<std::ofstream> m_Log;
   int m_Verbose;
 public:
@@ -122,10 +123,13 @@ public:
   , m_LowDeltaThres(1e-10)
   , m_LowGradientThres(1e-10)
   , m_StartingMu(1e3)
+  , m_ErrSqrNorm(0)
+  , m_GradSqrNorm(0)
   , m_Verbose(0)
   {}
   
   double get_err_sqr_norm() const { return m_ErrSqrNorm; }
+  double get_grad_sqr_norm() const { return m_GradSqrNorm; }
   
   void enable_logging(const xstring& filename)
   {
@@ -174,11 +178,11 @@ public:
     H = J.transpose() * J;
     Mat I = mat_traits<Mat>::identity(int(H.rows()));
     Vector g = 2 * J.transpose()*err;
-    double grad_norm = g.squaredNorm();
+    m_GradSqrNorm = g.squaredNorm();
     unsigned iter = 0;
     for (; iter < max_iters; ++iter)
     {
-      if (grad_norm < m_LowGradientThres)
+      if (m_GradSqrNorm < m_LowGradientThres)
       {
         res = OR_LOW_GRADIENT;
         break;
@@ -205,7 +209,7 @@ public:
         if (m_Verbose>1)
         {
           double avge=sqrt(next_err_norm / next_err.size());
-          std::cout << iter << ": g=" << grad_norm << "  e=" << next_err_norm << "  ae=" << avge << "  Mu=" << Mu << " params=";
+          std::cout << iter << ": g=" << m_GradSqrNorm << "  e=" << next_err_norm << "  ae=" << avge << "  Mu=" << Mu << " params=";
           for(int i=0;i<3;++i)
             std::cout << P[i].value() << ' ';
           std::cout << std::endl;
@@ -217,7 +221,7 @@ public:
         if (!m_Function.calculate_jacobian(J, P)) return OR_FAIL;
         H = J.transpose()*J;
         g = 2 * J.transpose()*err;
-        grad_norm = g.squaredNorm();
+        m_GradSqrNorm = g.squaredNorm();
         //if (Mu <= 1) Mu = Mu*0.99; else
           Mu *= 0.8;
       }
