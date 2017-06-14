@@ -14,6 +14,13 @@ inline void delay(unsigned ms)
   std::this_thread::sleep_for(std::chrono::milliseconds(ms));
 }
 
+inline double timestamp()
+{
+  static auto start=std::chrono::system_clock::now();
+  auto cur=std::chrono::system_clock::now();
+  return std::chrono::duration_cast<std::chrono::milliseconds>(cur-start).count();
+}
+
 typedef std::recursive_mutex Mutex;
 
 class Monitor
@@ -24,9 +31,9 @@ public:
   ~Monitor() { m_Mutex.unlock(); }
 };
 
-#define SYNC_MUTEX Mutex m_Mutex
-#define MONITOR(m) Monitor l_##__LINE__(m)
-#define SYNCHRONIZED MONITOR(Mutex)
+#define SYNC_MUTEX cxx::Mutex m_Mutex
+#define MONITOR(m) cxx::Monitor l_##__LINE__(m)
+#define SYNCHRONIZED MONITOR(m_Mutex)
 
 // Basically anything that can be called like a function that looks like:
 // void func();
@@ -38,6 +45,7 @@ class TaskThread
   std::thread m_Thread;
   bool        m_Terminate;
   callable    m_Current;
+  SYNC_MUTEX;
 
   void run()
   {
@@ -46,7 +54,10 @@ class TaskThread
       if (m_Current)
       {
         m_Current();
-        m_Current = callable();
+        {
+          SYNCHRONIZED;
+          m_Current = callable();
+        }
       }
       else
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -65,6 +76,7 @@ public:
   // Assign a task to this thread
   void set_task(callable c)
   {
+    SYNCHRONIZED;
     m_Current = c;
   }
 
@@ -76,6 +88,8 @@ public:
   }
 };
 
+typedef std::shared_ptr<TaskThread> task_thread_ptr;
+
 class TaskManager
 {
 public:
@@ -85,15 +99,34 @@ public:
     return ptr.get();
   }
 
-  void start(unsigned size)
+  void start(unsigned size, unsigned max_queue_size=0)
   {
-    m_Pool.resize(size);
+    if (m_Pool.empty())
+    {
+      if (max_queue_size==0) max_queue_size=size;
+      m_Pool.resize(size);
+      for(auto& tt : m_Pool)
+        tt.reset(new TaskThread);
+      m_MaxQueueSize=max_queue_size;
+    }
   }
 
-  void wait()
+  void wait(bool prints)
   {
-    while (!m_Tasks.empty() || busy_threads() > 0)
-      delay(10);
+    while (true)
+    {
+      unsigned queue = m_Tasks.size();
+      unsigned busy = busy_threads();
+      if (queue==0 && busy==0) break;
+      if (prints)
+      {
+        std::cout << timestamp << "   Q=" << queue << "   A=" << busy << "       \r";
+        std::cout.flush();
+        delay(100);
+      }
+      else
+        delay(10);
+    }
   }
 
   void add_task(callable c)
@@ -101,7 +134,8 @@ public:
     if (m_Pool.empty()) c();
     else
     {
-      while (m_Tasks.size() > m_Pool.size()) delay(10);
+      while (m_Tasks.size() >= m_MaxQueueSize)
+        delay(10);
       {
         SYNCHRONIZED;
         m_Tasks.push_back(c);
@@ -116,7 +150,7 @@ public:
       m_Terminate = true;
       m_Thread.join();
       for (auto& t : m_Pool)
-        t.terminate();
+        t->terminate();
     }
   }
 
@@ -141,7 +175,7 @@ private:
   {
     unsigned n = 0;
     for (auto& t : m_Pool)
-      if (!t.empty()) ++n;
+      if (!t->empty()) ++n;
     return n;
   }
 
@@ -149,12 +183,14 @@ private:
   {
     while (!m_Terminate)
     {
-      for (unsigned i = 0; i < m_Pool.size() && !m_Tasks.empty();++i)
+      size_t pool_size=m_Pool.size();
+      for (size_t i = 0; i < pool_size && !m_Tasks.empty();++i)
       {
-        if (m_Pool[i].empty())
+        if (m_Pool[i]->empty())
         {
           SYNCHRONIZED;
-          m_Pool[i].set_task(m_Tasks.front());
+          //sync_print("Dispatching task");
+          m_Pool[i]->set_task(m_Tasks.front());
           m_Tasks.pop_front();
         }
       }
@@ -162,25 +198,27 @@ private:
     }
   }
 
-  typedef std::vector<TaskThread> tt_vec;
+  typedef std::vector<task_thread_ptr> tt_vec;
 
   std::thread m_Thread;
   tt_vec      m_Pool;
   SYNC_MUTEX;
   call_seq    m_Tasks;
   bool        m_Terminate;
+  unsigned    m_MaxQueueSize;
 };
 
 // Automate the cleanup at the end of execution
 class TaskManagerCleaner
 {
 public:
-  TaskManagerCleaner(unsigned n) { TaskManager::instance()->start(n); }
+  TaskManagerCleaner(unsigned n, unsigned qs) { TaskManager::instance()->start(n,qs); }
   ~TaskManagerCleaner() { TaskManager::instance()->terminate(); }
 };
 
-#define TASK_MANAGER_POOL(n) TaskManagerCleaner l_TaskManager_##__LINE__(n)
-#define TASKS_WAIT cxx::TaskManager::instance()->wait()
+#define TASK_MANAGER_POOL(n,qs) cxx::TaskManagerCleaner l_TaskManager_##__LINE__(n,qs)
+#define TASKS_WAIT_PRINTS cxx::TaskManager::instance()->wait(true)
+#define TASKS_WAIT cxx::TaskManager::instance()->wait(false)
 inline void TASK(callable c) { cxx::TaskManager::instance()->add_task(c); }
 inline void CALL(callable c) { c(); }
 inline void TASK(bool parallel, callable c) { if (parallel) TASK(c); else c(); }
