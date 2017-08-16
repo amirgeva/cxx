@@ -5,12 +5,15 @@
 #include <memory>
 #include <string>
 #include <chrono>
+#include <cxx/threading.h>
 
 namespace cxx {
 
 class Timer
 {
 public:
+  Timer() : m_Start(get()) {}
+  
   typedef std::chrono::time_point<std::chrono::system_clock> time_point;
 
   static time_point get()
@@ -23,10 +26,11 @@ public:
     m_Start = get();
   }
 
-  double elapsed() const
+  double elapsed(bool reset)
   {
     time_point cur = get();
     std::chrono::duration<double> elapsed_seconds = cur - m_Start;
+    if (reset) m_Start=cur;
     return elapsed_seconds.count();
   }
 private:
@@ -43,9 +47,9 @@ public:
 
   void reset() { m_Timer.reset(); }
 
-  void print(std::ostream& os, const char* name, int N=1) const
+  void print(std::ostream& os, const char* name, int N=1)
   {
-    double t = 1000 * m_Timer.elapsed();
+    double t = 1000 * m_Timer.elapsed(false);
     os << "Total: " << std::setprecision(3) << std::fixed << t << "ms  for " << name;
     if (N > 1)
     {
@@ -78,6 +82,44 @@ public:
     print(std::cout,m_Name,m_N);
   }
 };
+
+class RunningProfiler
+{
+  SYNC_MUTEX;
+  xstring m_Name;
+  double  m_TotalTime;
+  xstring m_Report;
+  Timer   m_Timer;
+public:
+  RunningProfiler() {}
+  RunningProfiler(const xstring& name)
+  : m_Name(name)
+  , m_TotalTime(0)
+  {}
+  
+  ~RunningProfiler()
+  {
+    if (!m_Name.empty())
+    {
+      m_TotalTime+=m_Timer.elapsed(true);
+      m_Report+="  Total:"+xstring(1000.0*m_TotalTime);
+      std::cout << m_Report << std::endl;
+    }
+  }
+  
+  void mark(const xstring& id)
+  {
+    if (!m_Name.empty())
+    {
+      SYNCHRONIZED;
+      if (!m_Report.empty()) m_Report+="  ";
+      double t=m_Timer.elapsed(true);
+      m_TotalTime+=t;
+      m_Report+=id+":"+xstring(1000.0*t);
+    }
+  }
+};
+
 
 } // namespace cxx
 
