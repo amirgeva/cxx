@@ -75,6 +75,7 @@ inline gPoint<T> operator+ (const gPoint<T>& a, const gPoint<T>& b)
 
 typedef gPoint<unsigned short> sPoint;
 typedef gPoint<int> Point;
+typedef gPoint<double> dPoint;
 
 struct Size
 {
