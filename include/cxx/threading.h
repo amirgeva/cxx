@@ -1,5 +1,9 @@
 #pragma once
 
+#include <thread>
+#include <chrono>
+#include <mutex>
+
 namespace cxx {
 
 inline void delay(unsigned ms)
@@ -11,7 +15,7 @@ inline double timestamp()
 {
   static auto start=std::chrono::system_clock::now();
   auto cur=std::chrono::system_clock::now();
-  return std::chrono::duration_cast<std::chrono::milliseconds>(cur-start).count();
+  return double(std::chrono::duration_cast<std::chrono::milliseconds>(cur-start).count());
 }
 
 typedef std::recursive_mutex Mutex;
