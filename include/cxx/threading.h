@@ -32,5 +32,27 @@ public:
 #define MONITOR(m) cxx::Monitor l_##__LINE__(m)
 #define SYNCHRONIZED MONITOR(m_Mutex)
 
+class Waiter
+{
+  std::mutex m_Mutex;
+  std::condition_variable m_Cond;
+public:
+  void wait(unsigned ms=0)
+  {
+    std::unique_lock<std::mutex> lock(m_Mutex);
+    if (ms==0)
+      m_Cond.wait(lock);
+    else
+      m_Cond.wait_for(lock,std::chrono::milliseconds(ms));
+  }
+
+  void notify(bool all=false)
+  {
+    if (all) m_Cond.notify_all();
+    else
+      m_Cond.notify_one();
+  }
+};
+
 } // namespace cxx
 
