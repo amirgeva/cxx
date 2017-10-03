@@ -6,6 +6,7 @@
 #include <string>
 #include <chrono>
 #include <cxx/threading.h>
+#include <cxx/xstring.h>
 
 namespace cxx {
 
