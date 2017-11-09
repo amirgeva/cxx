@@ -37,6 +37,19 @@ public:
     }
   }
 
+  void wait_sleep()
+  {
+    size_t jobs = 1;
+    while (jobs>0)
+    {
+      {
+        SYNCHRONIZED;
+        jobs = m_Tasks.size() + m_BusyThreads;
+      }
+      if (jobs > 0) std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+  }
+
   void wait(bool prints)
   {
     size_t jobs = 1;
