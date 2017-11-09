@@ -2,6 +2,7 @@
 
 #include <Poco/Net/DatagramSocket.h>
 #include <Poco/Net/SocketAddress.h>
+#include <Poco/Net/NetworkInterface.h>
 #include <queue>
 #include <string>
 #include <thread>
@@ -9,11 +10,24 @@
 
 namespace cxx {
 
-inline void send_udp(const char* host, int port, const char* message, int len)
+inline void send_udp_broadcast(int port, const char* message, size_t len)
+{
+  Poco::Net::SocketAddress sa(Poco::Net::IPAddress::broadcast(), port);
+  Poco::Net::DatagramSocket s;
+  s.setBroadcast(true);
+  s.sendTo(message, int(len), sa);
+}
+
+inline void send_udp_broadcast(int port, const std::string& message)
+{
+  send_udp_broadcast(port, message.c_str(), message.length());
+}
+
+inline void send_udp(const char* host, int port, const char* message, size_t len)
 {
   Poco::Net::SocketAddress sa(host, port);
   Poco::Net::DatagramSocket s;
-  s.sendTo(message,len,sa);
+  s.sendTo(message,int(len),sa);
 }
 
 inline void send_udp(const char* host, int port, const std::string& message)
@@ -25,7 +39,7 @@ inline void send_udp(int port, const std::string& message)
 {
   Poco::Net::SocketAddress sa(Poco::Net::IPAddress("\177\000\000\001",4),port);
   Poco::Net::DatagramSocket s;
-  s.sendTo(message.c_str(),message.length(),sa);
+  s.sendTo(message.c_str(),int(message.length()),sa);
 }
 
 inline void ms_delay(unsigned ms) { std::this_thread::sleep_for(std::chrono::milliseconds(ms));}
@@ -73,7 +87,7 @@ public:
       try
       {
         Poco::Net::SocketAddress sender;
-        int n = m_Socket.receiveFrom(&m_Buffer[0], m_Buffer.size()-1, sender);
+        int n = m_Socket.receiveFrom(&m_Buffer[0], int(m_Buffer.size()-1), sender);
         if (n<=0) ms_delay(10);
         else
         {
