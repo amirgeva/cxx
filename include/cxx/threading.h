@@ -1,6 +1,7 @@
 #pragma once
 
 #include <thread>
+#include <chrono>
 #include <mutex>
 
 namespace cxx {

@@ -27,6 +27,11 @@ public:
     m_Data.resize(w*h, init);
   }
 
+  void fill(const T& value)
+  {
+    std::fill(m_Data.begin(), m_Data.end(), value);
+  }
+
   T& get(unsigned x, unsigned y)
   {
     if (x >= m_Width || y >= m_Height) throw 1;
