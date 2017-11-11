@@ -35,6 +35,13 @@ namespace cxx {
       m_Receivers.erase(it);
       return true;
     }
+
+    bool send_message(const xstring& host, int port, const xstring& message)
+    {
+      if (message.length()>MAX_MESSAGE_LENGTH) return false;
+      send_udp(host, port, message);
+      return true;
+    }
     
     bool send_message(int port, const xstring& message)
     {

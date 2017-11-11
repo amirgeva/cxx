@@ -32,6 +32,11 @@ public:
 
   ~ProgressBar()
   {
+    clear();
+  }
+  
+  void clear()
+  {
     *m_Output << xstring(m_Size + 2, ' ') << '\r';
   }
 
