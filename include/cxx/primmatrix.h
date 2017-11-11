@@ -29,19 +29,19 @@ public:
 
   T& get(unsigned x, unsigned y)
   {
-    if (x >= m_Width || y >= m_Height) throw 1;
+    if (x >= m_Width || y >= m_Height) throw std::runtime_error("Index out of bounds");
     return m_Data[y*m_Width + x];
   }
 
   const T& get(unsigned x, unsigned y) const
   {
-    if (x >= m_Width || y >= m_Height) throw 1;
+    if (x >= m_Width || y >= m_Height) throw std::runtime_error("Index out of bounds");
     return m_Data[y*m_Width + x];
   }
 
   void set(unsigned x, unsigned y, const T& value)
   {
-    if (x >= m_Width || y >= m_Height) throw 1;
+    if (x >= m_Width || y >= m_Height) throw std::runtime_error("Index out of bounds");
     m_Data[y*m_Width + x] = value;
   }
 
@@ -52,6 +52,12 @@ public:
 
   const T& operator() (unsigned x, unsigned y) const
   {
+    return get(x, y);
+  }
+
+  const T& operator() (unsigned x, unsigned y, const T& def) const
+  {
+    if (x >= m_Width || y >= m_Height) return def;
     return get(x, y);
   }
 
