@@ -12,7 +12,7 @@ namespace cxx {
 
 inline void send_udp_broadcast(int port, const char* message, size_t len)
 {
-  Poco::Net::SocketAddress sa(Poco::Net::IPAddress::broadcast(), port);
+  Poco::Net::SocketAddress sa(Poco::Net::NetworkInterface().broadcastAddress(), port);
   Poco::Net::DatagramSocket s;
   s.setBroadcast(true);
   s.sendTo(message, int(len), sa);
