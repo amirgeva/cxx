@@ -24,6 +24,8 @@ public:
     return ptr.get();
   }
 
+  bool initialized() const { return !m_Pool.empty(); }
+
   void start(size_t size, size_t max_queue_size=0)
   {
     if (m_Pool.empty())
@@ -34,6 +36,19 @@ public:
       for (auto& t : m_Pool)
         t = std::thread(&TaskManager::thread_main, this);
       m_MaxQueueSize = max_queue_size;
+    }
+  }
+
+  void wait_sleep()
+  {
+    size_t jobs = 1;
+    while (jobs>0)
+    {
+      {
+        SYNCHRONIZED;
+        jobs = m_Tasks.size() + m_BusyThreads;
+      }
+      if (jobs > 0) std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
   }
 
@@ -149,7 +164,7 @@ public:
   ~TaskManagerCleaner() { TaskManager::instance()->terminate(); }
 };
 
-#define TASK_MANAGER_POOL(n,qs) cxx::TaskManagerCleaner l_TaskManager_##__LINE__(n,qs)
+#define TASK_MANAGER_POOL(n,qs) std::unique_ptr<cxx::TaskManagerCleaner> l_TaskManagerCleaner_##__LINE__; if (!cxx::TaskManager::instance()->initialized()) l_TaskManagerCleaner_##__LINE__.reset(new cxx::TaskManagerCleaner(n,qs))
 #define TASKS_WAIT_PRINTS cxx::TaskManager::instance()->wait(true)
 #define TASKS_WAIT cxx::TaskManager::instance()->wait(false)
 inline void TASK(callable c) { cxx::TaskManager::instance()->add_task(c); }
