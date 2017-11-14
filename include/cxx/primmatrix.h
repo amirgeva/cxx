@@ -13,6 +13,12 @@ class TMatrix
   typedef std::vector<T> data_vec;
   data_vec m_Data;
 public:
+  class IndexOutOfBounds : public std::runtime_error
+  {
+  public:
+    IndexOutOfBounds() : std::runtime_error("Index out of bounds") {}
+  };
+
   TMatrix() : m_Width(0), m_Height(0) {}
   TMatrix(unsigned w, unsigned h, const T& init = T())
     : m_Width(w),
@@ -34,19 +40,19 @@ public:
 
   T& get(unsigned x, unsigned y)
   {
-    if (x >= m_Width || y >= m_Height) throw 1;
+    if (x >= m_Width || y >= m_Height) throw IndexOutOfBounds();
     return m_Data[y*m_Width + x];
   }
 
   const T& get(unsigned x, unsigned y) const
   {
-    if (x >= m_Width || y >= m_Height) throw 1;
+    if (x >= m_Width || y >= m_Height) throw IndexOutOfBounds();
     return m_Data[y*m_Width + x];
   }
 
   void set(unsigned x, unsigned y, const T& value)
   {
-    if (x >= m_Width || y >= m_Height) throw 1;
+    if (x >= m_Width || y >= m_Height) throw IndexOutOfBounds();
     m_Data[y*m_Width + x] = value;
   }
 
