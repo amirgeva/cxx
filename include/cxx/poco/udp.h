@@ -5,6 +5,7 @@
 #include <Poco/Net/NetworkInterface.h>
 #include <queue>
 #include <string>
+#include <vector>
 #include <thread>
 #include <chrono>
 
@@ -57,12 +58,16 @@ typedef std::queue<UDPMessage> message_queue;
 
 class UDPReceiver
 {
+  typedef std::function<void()> callback;
+  typedef std::vector<callback> listeners_vec; 
+
   Poco::Net::SocketAddress  m_Address;
   Poco::Net::DatagramSocket m_Socket;
   std::vector<char>         m_Buffer;
   std::thread               m_ReceiveThread;
   bool                      m_Done;
   message_queue             m_Queue;
+  listeners_vec             m_Listeners;
 public:
   UDPReceiver(int port, int maxlen)
   : m_Address(Poco::Net::IPAddress(), port)
@@ -76,8 +81,18 @@ public:
   
   ~UDPReceiver()
   {
-    m_Done=true;
+    m_Done = true;
     m_ReceiveThread.join();
+  }
+
+  void terminate()
+  {
+    m_Done = true;
+  }
+
+  void register_listener(callback cb)
+  {
+    m_Listeners.push_back(cb);
   }
   
   void receive_loop()
@@ -93,6 +108,7 @@ public:
         {
           m_Buffer[n] = '\0';
           m_Queue.push(UDPMessage(sender.toString(),std::string(&m_Buffer[0])));
+          for (auto& cb : m_Listeners) cb();
         }
       } catch (const Poco::TimeoutException&)
       {
