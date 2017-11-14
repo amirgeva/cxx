@@ -19,11 +19,11 @@ class Properties
     bool done=false;
     while (!done)
     {
-      int p=value.find("$(");
+      int p=int(value.find("$("));
       if (p<0) done=true;
       else
       {
-        int e=value.find(")",p+2);
+        int e=int(value.find(")",p+2));
         if (e<0) done=true;
         else
         {
