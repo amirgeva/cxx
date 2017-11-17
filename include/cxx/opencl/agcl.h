@@ -159,12 +159,12 @@ class InputBuffer : public Buffer<T>
 {
 public:
   InputBuffer(Context& ctx, size_t n)
-    : Buffer(ctx,n,true,false)
+    : Buffer<T>(ctx,n,true,false)
   {}
 
   void update()
   {
-    update_gpu_buffer();
+    Buffer<T>::update_gpu_buffer();
   }
 };
 
@@ -175,12 +175,12 @@ class OutputBuffer : public Buffer<T>
 {
 public:
   OutputBuffer(Context& ctx, size_t n)
-    : Buffer(ctx, n, false, true)
+    : Buffer<T>(ctx, n, false, true)
   {}
 
   void update(size_t offset=0, size_t count=std::numeric_limits<size_t>::max())
   {
-    update_cpu_buffer(offset,count);
+    Buffer<T>::update_cpu_buffer(offset,count);
   }
 };
 
