@@ -109,8 +109,12 @@ class Buffer
 protected:
   void update_gpu_buffer(size_t index=0, size_t count=std::numeric_limits<size_t>::max())
   {
-    cl_int rc = clEnqueueWriteBuffer(m_CommandQueue, m_GPU_Buffer, CL_TRUE, 0,
-                               m_CPU_Buffer.size() * sizeof(T), get(), 0, NULL, NULL);
+    if ((index + count) > size())
+      count = size() - index;
+    size_t byte_index = index * sizeof(T);
+    size_t byte_count = count * sizeof(T);
+    cl_int rc = clEnqueueWriteBuffer(m_CommandQueue, m_GPU_Buffer, CL_TRUE, byte_index,
+                               byte_count, get(), 0, NULL, NULL);
     CL_CHECK(rc);
   }
 
@@ -159,12 +163,12 @@ class InputBuffer : public Buffer<T>
 {
 public:
   InputBuffer(Context& ctx, size_t n)
-    : Buffer(ctx,n,true,false)
+    : Buffer<T>(ctx,n,true,false)
   {}
 
   void update()
   {
-    update_gpu_buffer();
+    Buffer<T>::update_gpu_buffer();
   }
 };
 
@@ -175,12 +179,12 @@ class OutputBuffer : public Buffer<T>
 {
 public:
   OutputBuffer(Context& ctx, size_t n)
-    : Buffer(ctx, n, false, true)
+    : Buffer<T>(ctx, n, false, true)
   {}
 
   void update(size_t offset=0, size_t count=std::numeric_limits<size_t>::max())
   {
-    update_cpu_buffer(offset,count);
+    Buffer<T>::update_cpu_buffer(offset,count);
   }
 };
 
