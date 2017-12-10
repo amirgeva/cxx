@@ -15,11 +15,12 @@ class Timer
 public:
   Timer() : m_Start(get()) {}
   
-  typedef std::chrono::time_point<std::chrono::system_clock> time_point;
+  typedef std::chrono::high_resolution_clock clock;
+  typedef std::chrono::time_point<clock> time_point;
 
   static time_point get()
   {
-    return std::chrono::system_clock::now();
+    return clock::now();
   }
 
   void reset()
@@ -39,6 +40,19 @@ private:
 };
 
 typedef std::unique_ptr<Timer> timer_ptr;
+
+class MeanProfiler
+{
+  Timer   m_Timer;
+  double& m_Mean;
+public:
+  MeanProfiler(double& mean) : m_Mean(mean) {}
+  ~MeanProfiler()
+  {
+    double value=m_Timer.elapsed(false);
+    m_Mean = 0.9*m_Mean + 0.1*value;
+  }
+};
 
 class Profiler
 {
@@ -126,5 +140,5 @@ public:
 
 #define PROFILER(x) cxx::SectionProfiler l_Prof_##__LINE__ (#x)
 #define PROFILER_N(x,N) cxx::SectionProfiler l_Prof_##__LINE__ (#x,N)
-
+#define MEAN_PROFILER(m) cxx::MeanProfiler l_MeanProf_##__LINE__(m)
 
