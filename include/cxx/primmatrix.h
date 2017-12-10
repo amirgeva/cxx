@@ -55,6 +55,12 @@ public:
     return get(x, y);
   }
 
+  const T& operator() (unsigned x, unsigned y, const T& def) const
+  {
+    if (x >= m_Width || y >= m_Height) return def;
+    return get(x, y);
+  }
+
   unsigned get_width() const { return m_Width; }
   unsigned get_height() const { return m_Height; }
 
