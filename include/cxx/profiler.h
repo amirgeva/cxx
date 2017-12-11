@@ -15,11 +15,11 @@ class Timer
 public:
   Timer() : m_Start(get()) {}
   
-  typedef std::chrono::time_point<std::chrono::system_clock> time_point;
+  typedef std::chrono::time_point<std::chrono::high_resolution_clock> time_point;
 
   static time_point get()
   {
-    return std::chrono::system_clock::now();
+    return std::chrono::high_resolution_clock::now();
   }
 
   void reset()
