@@ -6,7 +6,9 @@
 #include <thread>
 #include <mutex>
 #include <sstream>
+#include <unordered_map>
 #include <cxx/threading.h>
+#include <cxx/xstring.h>
 
 namespace cxx {
 
@@ -14,6 +16,23 @@ namespace cxx {
 // void func();
 typedef std::function<void()> callable;
 typedef std::list<callable> call_seq;
+
+struct Task
+{
+  Task(callable c=callable(), const xstring& grp="") : work(c), group(grp) {}
+  callable work;
+  xstring  group;
+};
+
+typedef std::list<Task> task_seq;
+
+struct TaskGroup
+{
+  TaskGroup() : count(0) {}
+  int count;
+  void increment() { ++count; }
+  void decrement() { --count; }
+};
 
 class TaskManager
 {
@@ -51,6 +70,20 @@ public:
       if (jobs > 0) std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
   }
+  
+  void group_wait(const xstring& group)
+  {
+    size_t jobs = 1;
+    while (jobs>0)
+    {
+      {
+        SYNCHRONIZED;
+        jobs = m_Groups[group].count;
+      }
+      if (jobs > 0)
+        m_UserQueue.wait(10);
+    }  
+  }
 
   void wait(bool prints)
   {
@@ -73,7 +106,7 @@ public:
     }
   }
 
-  void add_task(callable c)
+  void add_task(callable c, const xstring& group="")
   {
     if (m_Pool.empty()) c();
     else
@@ -82,7 +115,9 @@ public:
         delay(10);
       {
         SYNCHRONIZED;
-        m_Tasks.push_back(c);
+        if (!group.empty())
+          m_Groups[group].increment();
+        m_Tasks.push_back(Task(c,group));
         m_ThreadsQueue.notify();
       }
     }
@@ -120,7 +155,7 @@ private:
   {
     while (!m_Terminate)
     {
-      callable task;
+      Task task;
       {
         SYNCHRONIZED;
         if (!m_Tasks.empty())
@@ -130,12 +165,14 @@ private:
           m_Tasks.pop_front();
         }
       }
-      if (task)
+      if (task.work)
       {
-        task();
+        task.work();
         {
           SYNCHRONIZED;
           --m_BusyThreads;
+          if (!task.group.empty())
+            m_Groups[task.group].decrement();
         }
         m_UserQueue.notify();
       }
@@ -147,13 +184,14 @@ private:
   typedef std::vector<std::thread> threads_vec;
 
   SYNC_MUTEX;
-  threads_vec m_Pool;
-  Waiter      m_ThreadsQueue;
-  Waiter      m_UserQueue;
-  call_seq    m_Tasks;
-  bool        m_Terminate;
-  size_t      m_MaxQueueSize;
-  size_t      m_BusyThreads;
+  threads_vec                           m_Pool;
+  Waiter                                m_ThreadsQueue;
+  Waiter                                m_UserQueue;
+  task_seq                              m_Tasks;
+  std::unordered_map<xstring,TaskGroup> m_Groups;
+  bool                                  m_Terminate;
+  size_t                                m_MaxQueueSize;
+  size_t                                m_BusyThreads;
 };
 
 // Automate the cleanup at the end of execution
@@ -167,7 +205,8 @@ public:
 #define TASK_MANAGER_POOL(n,qs) std::unique_ptr<cxx::TaskManagerCleaner> l_TaskManagerCleaner_##__LINE__; if (!cxx::TaskManager::instance()->initialized()) l_TaskManagerCleaner_##__LINE__.reset(new cxx::TaskManagerCleaner(n,qs))
 #define TASKS_WAIT_PRINTS cxx::TaskManager::instance()->wait(true)
 #define TASKS_WAIT cxx::TaskManager::instance()->wait(false)
-inline void TASK(callable c) { cxx::TaskManager::instance()->add_task(c); }
+#define GROUP_WAIT(g) cxx::TaskManager::instance()->group_wait(g)
+inline void TASK(callable c, const xstring& group="") { cxx::TaskManager::instance()->add_task(c,group); }
 inline void CALL(callable c) { c(); }
 inline void TASK(bool parallel, callable c) { if (parallel) TASK(c); else c(); }
 
