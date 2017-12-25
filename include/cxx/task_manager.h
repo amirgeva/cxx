@@ -203,12 +203,11 @@ public:
 };
 
 #define TASK_MANAGER_POOL(n,qs) std::unique_ptr<cxx::TaskManagerCleaner> l_TaskManagerCleaner_##__LINE__; if (!cxx::TaskManager::instance()->initialized()) l_TaskManagerCleaner_##__LINE__.reset(new cxx::TaskManagerCleaner(n,qs))
-#define TASKS_WAIT_PRINTS cxx::TaskManager::instance()->wait(true)
-#define TASKS_WAIT cxx::TaskManager::instance()->wait(false)
-#define GROUP_WAIT(g) cxx::TaskManager::instance()->group_wait(g)
-inline void TASK(callable c, const xstring& group="") { cxx::TaskManager::instance()->add_task(c,group); }
-inline void CALL(callable c) { c(); }
-inline void TASK(bool parallel, callable c) { if (parallel) TASK(c); else c(); }
+inline void wait_all_tasks() { cxx::TaskManager::instance()->wait(false); }
+inline void wait_group(const xstring& name) { cxx::TaskManager::instance()->group_wait(name); }
+inline void add_task(callable c, const xstring& group="") { cxx::TaskManager::instance()->add_task(c,group); }
+inline void call_task(callable c) { c(); }
+inline void add_task(bool parallel, callable c, const xstring& group="") { if (parallel) add_task(c,group); else c(); }
 
 template<class T>
 inline void sync_print(const T& t)
