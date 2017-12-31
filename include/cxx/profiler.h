@@ -41,6 +41,28 @@ private:
 
 typedef std::unique_ptr<Timer> timer_ptr;
 
+class FPS
+{
+  Timer  m_Timer;
+  double m_FPS;
+  double m_Alpha;
+public:
+  FPS(double alpha=0.9, double base=30)
+  : m_FPS(base)
+  , m_Alpha(alpha)
+  {}
+  
+  int measure()
+  {
+    double cur=m_Timer.elapsed(true);
+    if (cur>1e-3)
+    {
+      m_FPS = m_Alpha*m_FPS + (1-m_Alpha)*(1/cur);
+    }
+    return int(m_FPS+0.5);
+  }
+};
+
 class MeanProfiler
 {
   Timer   m_Timer;
