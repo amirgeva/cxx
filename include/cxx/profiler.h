@@ -6,6 +6,7 @@
 #include <string>
 #include <chrono>
 #include <cxx/threading.h>
+#include <cxx/xstring.h>
 
 namespace cxx {
 
@@ -14,11 +15,12 @@ class Timer
 public:
   Timer() : m_Start(get()) {}
   
-  typedef std::chrono::time_point<std::chrono::system_clock> time_point;
+  typedef std::chrono::high_resolution_clock clock;
+  typedef std::chrono::time_point<clock> time_point;
 
   static time_point get()
   {
-    return std::chrono::system_clock::now();
+    return clock::now();
   }
 
   void reset()
@@ -38,6 +40,41 @@ private:
 };
 
 typedef std::unique_ptr<Timer> timer_ptr;
+
+class FPS
+{
+  Timer  m_Timer;
+  double m_FPS;
+  double m_Alpha;
+public:
+  FPS(double alpha=0.9, double base=30)
+  : m_FPS(base)
+  , m_Alpha(alpha)
+  {}
+  
+  int measure()
+  {
+    double cur=m_Timer.elapsed(true);
+    if (cur>1e-3)
+    {
+      m_FPS = m_Alpha*m_FPS + (1-m_Alpha)*(1/cur);
+    }
+    return int(m_FPS+0.5);
+  }
+};
+
+class MeanProfiler
+{
+  Timer   m_Timer;
+  double& m_Mean;
+public:
+  MeanProfiler(double& mean) : m_Mean(mean) {}
+  ~MeanProfiler()
+  {
+    double value=m_Timer.elapsed(false);
+    m_Mean = 0.9*m_Mean + 0.1*value;
+  }
+};
 
 class Profiler
 {
@@ -125,5 +162,5 @@ public:
 
 #define PROFILER(x) cxx::SectionProfiler l_Prof_##__LINE__ (#x)
 #define PROFILER_N(x,N) cxx::SectionProfiler l_Prof_##__LINE__ (#x,N)
-
+#define MEAN_PROFILER(m) cxx::MeanProfiler l_MeanProf_##__LINE__(m)
 

@@ -3,18 +3,33 @@
 #include <Poco/Net/DatagramSocket.h>
 #include <Poco/Net/SocketAddress.h>
 #include <Poco/Net/DNS.h>
+#include <Poco/Net/NetworkInterface.h>
 #include <queue>
 #include <string>
+#include <vector>
 #include <thread>
 #include <chrono>
 
 namespace cxx {
 
-inline void send_udp(const char* host, int port, const char* message, int len)
+inline void send_udp_broadcast(int port, const char* message, size_t len)
+{
+  Poco::Net::SocketAddress sa(Poco::Net::NetworkInterface().broadcastAddress(), port);
+  Poco::Net::DatagramSocket s;
+  s.setBroadcast(true);
+  s.sendTo(message, int(len), sa);
+}
+
+inline void send_udp_broadcast(int port, const std::string& message)
+{
+  send_udp_broadcast(port, message.c_str(), message.length());
+}
+
+inline void send_udp(const char* host, int port, const char* message, size_t len)
 {
   Poco::Net::SocketAddress sa(host, port);
   Poco::Net::DatagramSocket s;
-  s.sendTo(message,len,sa);
+  s.sendTo(message,int(len),sa);
 }
 
 inline void send_udp(const char* host, int port, const std::string& message)
@@ -26,7 +41,7 @@ inline void send_udp(int port, const std::string& message)
 {
   Poco::Net::SocketAddress sa(Poco::Net::IPAddress("\177\000\000\001",4),port);
   Poco::Net::DatagramSocket s;
-  s.sendTo(message.c_str(),message.length(),sa);
+  s.sendTo(message.c_str(),int(message.length()),sa);
 }
 
 inline void ms_delay(unsigned ms) { std::this_thread::sleep_for(std::chrono::milliseconds(ms));}
@@ -44,14 +59,16 @@ typedef std::function<void(const std::string&)> udp_callback;
 
 class UDPReceiver
 {
+  typedef std::function<void()> callback;
+  typedef std::vector<callback> listeners_vec; 
+
   Poco::Net::SocketAddress  m_Address;
   Poco::Net::DatagramSocket m_Socket;
   std::vector<char>         m_Buffer;
   std::thread               m_ReceiveThread;
   bool                      m_Done;
   message_queue             m_Queue;
-  udp_callback              m_Callback;
-  
+  listeners_vec             m_Listeners;
 public:
   UDPReceiver(int port, int maxlen)
   : m_Address(Poco::Net::DNS::hostName(), port)
@@ -65,12 +82,20 @@ public:
   
   ~UDPReceiver()
   {
-    m_Done=true;
+    m_Done = true;
     m_ReceiveThread.join();
   }
 
-  void set_callback(udp_callback cb) { m_Callback=cb; }
+  void terminate()
+  {
+    m_Done = true;
+  }
 
+  void register_listener(callback cb)
+  {
+    m_Listeners.push_back(cb);
+  }
+  
   void receive_loop()
   {
     while (!m_Done)
@@ -78,15 +103,13 @@ public:
       try
       {
         Poco::Net::SocketAddress sender;
-        int n = m_Socket.receiveFrom(&m_Buffer[0], m_Buffer.size()-1, sender);
+        int n = m_Socket.receiveFrom(&m_Buffer[0], int(m_Buffer.size()-1), sender);
         if (n<=0) ms_delay(10);
         else
         {
           m_Buffer[n] = '\0';
-          std::string msg(&m_Buffer[0]);
-          if (m_Callback) m_Callback(msg);
-          else
-            m_Queue.push(UDPMessage(sender.toString(),msg));
+          m_Queue.push(UDPMessage(sender.toString(),std::string(&m_Buffer[0])));
+          for (auto& cb : m_Listeners) cb();
         }
       } catch (const Poco::TimeoutException&)
       {
@@ -106,5 +129,4 @@ public:
 };
 
 } // namespace cxx
-
 
