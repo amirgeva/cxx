@@ -2,6 +2,7 @@
 
 #include <Poco/Net/DatagramSocket.h>
 #include <Poco/Net/SocketAddress.h>
+#include <Poco/Net/DNS.h>
 #include <queue>
 #include <string>
 #include <thread>
@@ -39,7 +40,7 @@ struct UDPMessage
 };
 
 typedef std::queue<UDPMessage> message_queue;
-
+typedef std::function<void(const std::string&)> udp_callback;
 
 class UDPReceiver
 {
@@ -49,9 +50,11 @@ class UDPReceiver
   std::thread               m_ReceiveThread;
   bool                      m_Done;
   message_queue             m_Queue;
+  udp_callback              m_Callback;
+  
 public:
   UDPReceiver(int port, int maxlen)
-  : m_Address(Poco::Net::IPAddress(), port)
+  : m_Address(Poco::Net::DNS::hostName(), port)
   , m_Socket(m_Address)
   , m_Buffer(maxlen)
   , m_Done(false)
@@ -65,7 +68,9 @@ public:
     m_Done=true;
     m_ReceiveThread.join();
   }
-  
+
+  void set_callback(udp_callback cb) { m_Callback=cb; }
+
   void receive_loop()
   {
     while (!m_Done)
@@ -78,7 +83,10 @@ public:
         else
         {
           m_Buffer[n] = '\0';
-          m_Queue.push(UDPMessage(sender.toString(),std::string(&m_Buffer[0])));
+          std::string msg(&m_Buffer[0]);
+          if (m_Callback) m_Callback(msg);
+          else
+            m_Queue.push(UDPMessage(sender.toString(),msg));
         }
       } catch (const Poco::TimeoutException&)
       {
