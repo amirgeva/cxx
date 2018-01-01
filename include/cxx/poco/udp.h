@@ -59,8 +59,7 @@ typedef std::function<void(const std::string&)> udp_callback;
 
 class UDPReceiver
 {
-  typedef std::function<void()> callback;
-  typedef std::vector<callback> listeners_vec; 
+  typedef std::vector<udp_callback> listeners_vec; 
 
   Poco::Net::SocketAddress  m_Address;
   Poco::Net::DatagramSocket m_Socket;
@@ -91,7 +90,7 @@ public:
     m_Done = true;
   }
 
-  void register_listener(callback cb)
+  void register_listener(udp_callback cb)
   {
     m_Listeners.push_back(cb);
   }
@@ -108,8 +107,11 @@ public:
         else
         {
           m_Buffer[n] = '\0';
-          m_Queue.push(UDPMessage(sender.toString(),std::string(&m_Buffer[0])));
-          for (auto& cb : m_Listeners) cb();
+          std::string msg(&m_Buffer[0]);
+          if (m_Listeners.empty())
+            m_Queue.push(UDPMessage(sender.toString(),msg));
+          else
+            for (auto& cb : m_Listeners) cb(msg);
         }
       } catch (const Poco::TimeoutException&)
       {
