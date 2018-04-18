@@ -48,6 +48,8 @@ private:
   std::normal_distribution<double> gaussian;
 };
 
+inline void SEED(unsigned seed) { RandomGenerator::instance()->set_seed(seed); }
+
 inline double R(double s = 2.0)
 {
   return s*(RandomGenerator::instance()->gen() - 0.5);
