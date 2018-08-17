@@ -2,6 +2,7 @@
 
 #include <Poco/Net/DatagramSocket.h>
 #include <Poco/Net/SocketAddress.h>
+#include <Poco/Net/DNS.h>
 #include <Poco/Net/NetworkInterface.h>
 #include <queue>
 #include <string>
@@ -54,12 +55,11 @@ struct UDPMessage
 };
 
 typedef std::queue<UDPMessage> message_queue;
-
+typedef std::function<void(const std::string&)> udp_callback;
 
 class UDPReceiver
 {
-  typedef std::function<void()> callback;
-  typedef std::vector<callback> listeners_vec; 
+  typedef std::vector<udp_callback> listeners_vec; 
 
   Poco::Net::SocketAddress  m_Address;
   Poco::Net::DatagramSocket m_Socket;
@@ -70,7 +70,7 @@ class UDPReceiver
   listeners_vec             m_Listeners;
 public:
   UDPReceiver(int port, int maxlen)
-  : m_Address(Poco::Net::IPAddress(), port)
+  : m_Address(Poco::Net::DNS::hostName(), port)
   , m_Socket(m_Address)
   , m_Buffer(maxlen)
   , m_Done(false)
@@ -90,7 +90,7 @@ public:
     m_Done = true;
   }
 
-  void register_listener(callback cb)
+  void register_listener(udp_callback cb)
   {
     m_Listeners.push_back(cb);
   }
@@ -107,8 +107,11 @@ public:
         else
         {
           m_Buffer[n] = '\0';
-          m_Queue.push(UDPMessage(sender.toString(),std::string(&m_Buffer[0])));
-          for (auto& cb : m_Listeners) cb();
+          std::string msg(&m_Buffer[0]);
+          if (m_Listeners.empty())
+            m_Queue.push(UDPMessage(sender.toString(),msg));
+          else
+            for (auto& cb : m_Listeners) cb(msg);
         }
       } catch (const Poco::TimeoutException&)
       {
@@ -128,5 +131,4 @@ public:
 };
 
 } // namespace cxx
-
 

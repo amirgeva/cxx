@@ -72,6 +72,8 @@ public:
     return get(x, y);
   }
 
+  unsigned width() const { return m_Width; }
+  unsigned height() const { return m_Height; }
   unsigned get_width() const { return m_Width; }
   unsigned get_height() const { return m_Height; }
 
