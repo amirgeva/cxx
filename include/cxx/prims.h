@@ -64,6 +64,8 @@ struct gPoint
   self& operator+= (const self& rhs) { x += rhs.x; y += rhs.y; return *this; }
   self& operator-= (const self& rhs) { x -= rhs.x; y -= rhs.y; return *this; }
   self operator- () const { return self(-x, -y); }
+  T squared_norm() const { return x * x + y * y; }
+  double norm() const { return sqrt(squared_norm()); }
 };
 
 template<class T>
@@ -71,6 +73,19 @@ inline gPoint<T> operator+ (const gPoint<T>& a, const gPoint<T>& b)
 {
   gPoint<T> res = a;
   return res += b;
+}
+
+template<class T>
+inline gPoint<T> operator- (const gPoint<T>& a, const gPoint<T>& b)
+{
+  gPoint<T> res = a;
+  return res -= b;
+}
+
+template<class T>
+inline std::ostream& operator<< (std::ostream& os, const gPoint<T>& p)
+{
+  return os << p.x << ',' << p.y;
 }
 
 typedef gPoint<unsigned short> sPoint;
@@ -121,6 +136,18 @@ struct Rect
     , r(br.x)
     , b(br.y)
   {}
+  void init_unite(int x, int y)
+  {
+    if (l == r || t == b)
+    {
+      l = x;
+      t = y;
+      r = l + 1;
+      b = t + 1;
+    }
+    else
+      unite(x, y);
+  }
   void unite(int x, int y)
   {
     if (x<l) l=x;

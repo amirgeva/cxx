@@ -102,11 +102,13 @@ class Buffer
 {
   typedef typename std::vector<T> cpu_buffer;
   cpu_buffer m_CPU_Buffer;
+  T*         m_Ext_Buffer;
   cl_mem     m_GPU_Buffer;
+  size_t     m_Size;
   cl_command_queue m_CommandQueue;
   Buffer(const Buffer&) {}
   Buffer& operator=(const Buffer&) { return *this; }
-protected:
+public:
   void update_gpu_buffer(size_t index=0, size_t count=std::numeric_limits<size_t>::max())
   {
     if ((index + count) > size())
@@ -130,9 +132,24 @@ protected:
     CL_CHECK(rc);
   }
 public:
+  Buffer(Context& ctx, size_t n, T* ext_data, bool input, bool output)
+    : m_Ext_Buffer(ext_data)
+    , m_CommandQueue(ctx.get_command_queue())
+    , m_Size(n)
+  {
+    cl_int rc;
+    int flags = (input ? CL_MEM_READ_ONLY : 0) | (output ? CL_MEM_WRITE_ONLY : 0);
+    if (input && output) flags = CL_MEM_READ_WRITE;
+    m_GPU_Buffer = clCreateBuffer(ctx.get_context(), flags,
+                                  n * sizeof(T), NULL, &rc);
+    CL_CHECK(rc);
+  }
+
   Buffer(Context& ctx, size_t n, bool input, bool output)
     : m_CPU_Buffer(n)
+    , m_Ext_Buffer(nullptr)
     , m_CommandQueue(ctx.get_command_queue())
+    , m_Size(n)
   {
     cl_int rc;
     int flags = (input? CL_MEM_READ_ONLY:0) | (output ? CL_MEM_WRITE_ONLY : 0);
@@ -149,11 +166,19 @@ public:
   
   cl_mem get_gpu_buffer() { return m_GPU_Buffer; }
 
-  size_t size() const { return m_CPU_Buffer.size(); }
-  T* get() { return &m_CPU_Buffer[0]; }
-  const T* get() const { return &m_CPU_Buffer[0]; }
-  T& operator[] (size_t i) { return m_CPU_Buffer[i]; }
-  const T& operator[] (size_t i) const { return m_CPU_Buffer[i]; }
+  size_t size() const { return m_Size; }
+  T* get() 
+  { 
+    if (m_Ext_Buffer) return m_Ext_Buffer;
+    return &m_CPU_Buffer[0]; 
+  }
+  const T* get() const 
+  { 
+    if (m_Ext_Buffer) return m_Ext_Buffer;
+    return &m_CPU_Buffer[0];
+  }
+  T& operator[] (size_t i) { return get()[i]; }
+  const T& operator[] (size_t i) const { return get()[i]; }
 };
 
 // Sub-type representing an input buffer, that is filled by CPU code,
@@ -236,7 +261,7 @@ public:
     m_Index = 0;
     add_arguments(args...);
     cl_int rc = clEnqueueNDRangeKernel(m_CommandQueue, m_Kernel, 1, NULL,
-                                       &work_items, &m_BlockSize, 0, NULL, NULL);
+                                       &work_items, /*&m_BlockSize*/NULL, 0, NULL, NULL);
     CL_CHECK(rc);
   }
 };
@@ -273,6 +298,8 @@ public:
     CL_CHECK(rc);
   }
 
+  Context& get_context() { return m_Context; }
+
   void set_block_size(size_t block_size)
   {
     m_BlockSize = block_size;
@@ -290,6 +317,47 @@ public:
     return res;
   }
 
+};
+
+class Manager
+{
+public:
+  static Manager* instance()
+  {
+    static std::unique_ptr<Manager> ptr(new Manager);
+    return ptr.get();
+  }
+
+  void load_program(const std::string& name, Context& ctx, const std::string& code)
+  {
+    m_Current = std::make_shared<Program>(ctx, code);
+    m_Programs[name] = m_Current;
+  }
+
+  Program& current() 
+  { 
+    if (!m_Current) throw std::runtime_error("No program is loaded");
+    return *m_Current; 
+  }
+
+  Context& current_context()
+  {
+    if (!m_Current) throw std::runtime_error("No program is loaded");
+    return m_Current->get_context();
+  }
+
+  bool active() const { return m_Current; }
+
+private:
+  friend struct std::default_delete<Manager>;
+  Manager()  {}
+  ~Manager() {}
+  Manager(const Manager&rhs) {}
+  Manager&operator= (const Manager&rhs) { return *this; }
+
+  typedef std::shared_ptr<Program> prg_ptr;
+  std::unordered_map<std::string, prg_ptr> m_Programs;
+  prg_ptr m_Current;
 };
 
 

@@ -16,6 +16,11 @@ class Score
 public:
   Score()
   {
+    clear();
+  }
+
+  void clear()
+  {
     tp = tn = fp = fn = n = 0;
   }
 
@@ -32,6 +37,12 @@ public:
       if (expected_res) ++fn;
       else ++fp;
     }
+  }
+
+  void mini_print(std::ostream& os = std::cout)
+  {
+    double tpr = double(tp) / (tp + fn);
+    os << "TPR=" << perc(tpr);
   }
 
   void print(std::ostream& os=std::cout)
