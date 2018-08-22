@@ -11,13 +11,13 @@ typedef unsigned char byte;
 const double PI = 3.1415926535897932384626433832795;
 
 template<class T>
-inline T Max(const T& a, const T& b)
+inline const T& Max(const T& a, const T& b)
 {
   return a>b?a:b;
 }
 
 template<class T>
-inline T Min(const T& a, const T& b)
+inline const T& Min(const T& a, const T& b)
 {
   return a<b?a:b;
 }
@@ -73,6 +73,19 @@ inline gPoint<T> operator+ (const gPoint<T>& a, const gPoint<T>& b)
   return res += b;
 }
 
+template<class T>
+inline gPoint<T> operator- (const gPoint<T>& a, const gPoint<T>& b)
+{
+  gPoint<T> res = a;
+  return res -= b;
+}
+
+template<class T>
+inline std::ostream& operator<< (std::ostream& os, const gPoint<T>& p)
+{
+  return os << p.x << ',' << p.y;
+}
+
 typedef gPoint<unsigned short> sPoint;
 typedef gPoint<int> Point;
 typedef gPoint<double> dPoint;
@@ -121,6 +134,18 @@ struct Rect
     , r(br.x)
     , b(br.y)
   {}
+  void init_unite(int x, int y)
+  {
+    if (l==r && t==b)
+    {
+      l=x;
+      t=y;
+      r=x+1;
+      b=y+1;
+    }
+    else
+      unite(x,y);
+  }
   void unite(int x, int y)
   {
     if (x<l) l=x;
@@ -145,11 +170,27 @@ struct Rect
   int get_area() const { return width()*height(); }
   double aspect_ratio() const { return double(width())/double(height()); }
   bool valid() const { return (r>l && b>t); }
+  int get_coord(int index) const
+  {
+    switch (index) {
+      case 0: return l;
+      case 1: return t;
+      case 2: return r;
+      case 3: return b;
+    }
+    return -1;
+  }
 
-  void offset(int x, int y)
+  Rect& offset(int x, int y)
   {
     l+=x; r+=x;
     t+=y; b+=y;
+    return *this;
+  }
+  
+  Rect& offset(const Point& p)
+  {
+    return offset(p.x,p.y);
   }
 
   Rect& intersect(const Rect& rhs)
@@ -163,9 +204,9 @@ struct Rect
 
   bool overlaps(const Rect& rhs) const
   {
-    Rect r = *this;
-    r.intersect(rhs);
-    return r.valid();
+    Rect rect = *this;
+    rect.intersect(rhs);
+    return rect.valid();
   }
 
   bool contains(const Point& p) const
