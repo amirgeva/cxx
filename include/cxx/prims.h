@@ -11,13 +11,13 @@ typedef unsigned char byte;
 const double PI = 3.1415926535897932384626433832795;
 
 template<class T>
-inline T Max(const T& a, const T& b)
+inline const T& Max(const T& a, const T& b)
 {
   return a>b?a:b;
 }
 
 template<class T>
-inline T Min(const T& a, const T& b)
+inline const T& Min(const T& a, const T& b)
 {
   return a<b?a:b;
 }
@@ -172,11 +172,27 @@ struct Rect
   int get_area() const { return width()*height(); }
   double aspect_ratio() const { return double(width())/double(height()); }
   bool valid() const { return (r>l && b>t); }
+  int get_coord(int index) const
+  {
+    switch (index) {
+      case 0: return l;
+      case 1: return t;
+      case 2: return r;
+      case 3: return b;
+    }
+    return -1;
+  }
 
-  void offset(int x, int y)
+  Rect& offset(int x, int y)
   {
     l+=x; r+=x;
     t+=y; b+=y;
+    return *this;
+  }
+  
+  Rect& offset(const Point& p)
+  {
+    return offset(p.x,p.y);
   }
 
   Rect& intersect(const Rect& rhs)
@@ -190,9 +206,9 @@ struct Rect
 
   bool overlaps(const Rect& rhs) const
   {
-    Rect r = *this;
-    r.intersect(rhs);
-    return r.valid();
+    Rect rect = *this;
+    rect.intersect(rhs);
+    return rect.valid();
   }
 
   bool contains(const Point& p) const

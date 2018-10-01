@@ -70,7 +70,7 @@ class UDPReceiver
   listeners_vec             m_Listeners;
 public:
   UDPReceiver(int port, int maxlen)
-  : m_Address(Poco::Net::DNS::hostName(), port)
+  : m_Address("0.0.0.0", port)
   , m_Socket(m_Address)
   , m_Buffer(maxlen)
   , m_Done(false)

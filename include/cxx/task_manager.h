@@ -98,8 +98,8 @@ public:
       {
         if (prints)
         {
-          std::cout << jobs << "       \r";
-          std::cout.flush();
+          std::cerr << ' ' << jobs << "       \r";
+          std::cerr.flush();
         }
         m_UserQueue.wait(10);
       }
@@ -203,7 +203,7 @@ public:
 };
 
 #define TASK_MANAGER_POOL(n,qs) std::unique_ptr<cxx::TaskManagerCleaner> l_TaskManagerCleaner_##__LINE__; if (!cxx::TaskManager::instance()->initialized()) l_TaskManagerCleaner_##__LINE__.reset(new cxx::TaskManagerCleaner(n,qs))
-inline void wait_all_tasks() { cxx::TaskManager::instance()->wait(false); }
+inline void wait_all_tasks(bool prints=false) { cxx::TaskManager::instance()->wait(prints); }
 inline void wait_group(const xstring& name) { cxx::TaskManager::instance()->group_wait(name); }
 inline void add_task(callable c, const xstring& group="") { cxx::TaskManager::instance()->add_task(c,group); }
 inline void call_task(callable c) { c(); }
