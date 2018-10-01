@@ -98,8 +98,8 @@ public:
       {
         if (prints)
         {
-          std::cout << ' ' << jobs << "       \r";
-          std::cout.flush();
+          std::cerr << ' ' << jobs << "       \r";
+          std::cerr.flush();
         }
         m_UserQueue.wait(10);
       }

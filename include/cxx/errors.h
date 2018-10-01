@@ -5,10 +5,9 @@
 
 namespace cxx {
 
-#define BUILD_STRING(x)\
-(static_cast<std::ostringstream&>(std::ostringstream() << x)).str()
+//#define BUILD_STRING(x) xstring(x)
 
-#define THROW_ERROR(x) throw BUILD_STRING(x)
+#define THROW_ERROR(x) { xstring msg; msg << x; throw msg; }
 
 } // namespace cxx
 
