@@ -51,10 +51,11 @@ public:
     {
       m_BusyThreads = 0;
       if (max_queue_size == 0) max_queue_size = size;
+      m_MaxQueueSize = max_queue_size;
+      std::cout << "Resize pool to " << size << "  Queue size " << m_MaxQueueSize << std::endl;
       m_Pool.resize(size);
       for (auto& t : m_Pool)
         t = std::thread(&TaskManager::thread_main, this);
-      m_MaxQueueSize = max_queue_size;
     }
   }
 
@@ -88,6 +89,7 @@ public:
   void wait(bool prints)
   {
     size_t jobs = 1;
+    size_t last_jobs = 0;
     while (jobs>0)
     {
       {
@@ -96,10 +98,11 @@ public:
       }
       if (jobs > 0)
       {
-        if (prints)
+        if (prints && last_jobs!=jobs)
         {
           std::cerr << ' ' << jobs << "       \r";
           std::cerr.flush();
+          last_jobs = jobs;
         }
         m_UserQueue.wait(10);
       }
@@ -108,11 +111,16 @@ public:
 
   void add_task(callable c, const xstring& group="")
   {
-    if (m_Pool.empty()) c();
+    if (m_Pool.empty())
+    {
+      c();
+    }
     else
     {
       while (m_Tasks.size() >= m_MaxQueueSize)
+      {
         delay(10);
+      }
       {
         SYNCHRONIZED;
         if (!group.empty())
@@ -139,6 +147,8 @@ public:
     SYNCHRONIZED;
     std::cout << s << std::endl;
   }
+
+  size_t size() const { return m_Tasks.size(); }
   
 private:
   friend struct std::default_delete<TaskManager>;
@@ -153,6 +163,7 @@ private:
 
   void thread_main()
   {
+    auto id=std::this_thread::get_id();
     while (!m_Terminate)
     {
       Task task;

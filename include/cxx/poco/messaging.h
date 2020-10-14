@@ -20,14 +20,23 @@ namespace cxx {
       return ptr.get();
     }
     
-    bool start_listening(int port)
+    bool start_listening(int port, udp_callback cb)
     {
       if (m_Receivers.count(port)>0) return false; // Already listening
       receiver_ptr r(new UDPReceiver(port,MAX_MESSAGE_LENGTH));
       m_Receivers[port]=r;
+      r->register_listener(cb);
       return true;
     }
     
+    bool start_listening(int port)
+    {
+      if (m_Receivers.count(port) > 0) return false; // Already listening
+      receiver_ptr r(new UDPReceiver(port, MAX_MESSAGE_LENGTH));
+      m_Receivers[port] = r;
+      return true;
+    }
+
     bool stop_listening(int port)
     {
       auto it=m_Receivers.find(port);

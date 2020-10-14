@@ -138,7 +138,7 @@ void Opt_##name::process(const cxx::xstring& param)
   };
 
   template<>
-  CommandLine& CommandLine::operator>>(xstring& s) { s = get(m_Current++); return *this; }
+  inline CommandLine& CommandLine::operator>>(xstring& s) { s = get(m_Current++); return *this; }
 
 } // namespace cxx
 

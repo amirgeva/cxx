@@ -75,16 +75,26 @@ namespace cxx {
       return *this;
     }
 
+    bool read_line_skip_empty(std::istream& is)
+    {
+      while (true)
+      {
+        if (!read_line(is)) return false;
+        if (!trim().empty()) break;
+      }
+      return true;
+    }
+
     bool read_line(std::istream& is)
     {
       *this = "";
       if (is.eof()) return false;
-      char buffer[1024];
+      char buffer[65536];
       bool rc = false;
       while (true)
       {
         buffer[0] = 0;
-        is.getline(buffer, 1000);
+        is.getline(buffer, 65535);
         bool found_eol = !is.fail();
         rc |= found_eol;
         std::streamsize act = is.gcount();
@@ -192,6 +202,31 @@ namespace cxx {
         if (c >= 'A' && c <= 'Z') c += 32;
       }
     }
+
+    inline xstring to_lower(const xstring& s)
+    {
+      xstring res = s;
+      make_lower(res);
+      return res;
+    }
+
+    inline void make_upper(xstring& s)
+    {
+      xstring::iterator b = s.begin(), e = s.end();
+      for (; b != e; ++b)
+      {
+        char& c = *b;
+        if (c >= 'a' && c <= 'z') c -= 32;
+      }
+    }
+
+    inline xstring to_upper(const xstring& s)
+    {
+      xstring res = s;
+      make_upper(res);
+      return res;
+    }
+
 
     template<class T>
     inline xstring pad(const T& t, unsigned len = 0, char fill = ' ', bool pre_fill = true)
