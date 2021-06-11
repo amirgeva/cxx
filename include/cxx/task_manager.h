@@ -163,7 +163,7 @@ private:
 
   void thread_main()
   {
-    auto id=std::this_thread::get_id();
+    //auto id=std::this_thread::get_id();
     while (!m_Terminate)
     {
       Task task;
