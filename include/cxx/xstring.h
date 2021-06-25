@@ -145,6 +145,7 @@ namespace cxx {
   template<class T>
   class basic_string_tokenizer
   {
+	  typedef basic_string_tokenizer<T> self;
     typedef basic_xstring<T> str;
     typedef std::vector<str> seq;
     seq      m_Tokens;
@@ -174,6 +175,15 @@ namespace cxx {
         return m_Tokens[m_Current++];
       return str();
     }
+
+	template<typename U>
+	self& operator>> (U& u)
+	{
+		std::istringstream is(get_next_token());
+		is >> u;
+		return *this;
+	}
+
   };
 
 } // namespace cxx
