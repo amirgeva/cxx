@@ -97,7 +97,7 @@ void Opt_##name::process(const cxx::xstring& param)
 
 
     friend struct std::default_delete<CommandLine>;
-    CommandLine() : m_Current(0) {}
+    CommandLine() {}
     ~CommandLine() { register_option("h", false, &m_HelpOption); }
     CommandLine(const CommandLine&) {}
     CommandLine& operator= (const CommandLine&) { return *this; }
@@ -107,7 +107,7 @@ void Opt_##name::process(const cxx::xstring& param)
     HelpCommandOption m_HelpOption;
     opt_map m_Options;
     str_vec m_Params;
-    int     m_Current;
+    int     m_Current=0;
     xstring m_Name;
     xstring m_Usage;
   public:

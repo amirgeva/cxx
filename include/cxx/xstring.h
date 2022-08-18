@@ -43,6 +43,15 @@ namespace cxx {
 
     operator const value_type* () const { return parent::c_str(); }
 
+    template<typename T>
+    T as() const
+    {
+        T res;
+        std::istringstream is(*this);
+        is >> res;
+        return res;
+    }
+
     int as_int() const
     {
       return atoi(parent::c_str());
